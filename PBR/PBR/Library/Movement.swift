@@ -11,7 +11,7 @@ import simd
 
 class Movement
 {
-    let defaultCameraPosition: SIMD3<Float> = SIMD3<Float>(0.0, 0.0, 1.0)
+    let defaultCameraPosition: SIMD3<Float> = SIMD3<Float>(0.0, 0.0, 5.0)
     let defaultCameraDirection: SIMD3<Float> = SIMD3<Float>(0.0, 0.0, -1.0)
     
     var projectionMatrix: simd_float4x4

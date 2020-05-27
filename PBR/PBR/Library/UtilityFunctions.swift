@@ -214,3 +214,80 @@ func createRenderPipelineDescriptor(device: MTLDevice, vertexShader: String, fra
     
     return rpd
 }
+
+func readObj(file: String, materialIndex: Int) -> Object
+{
+    let bundle = Bundle.main
+    let path = bundle.path(forResource: file, ofType: nil)!
+    let fileContents = try! String.init(contentsOfFile: path, encoding: .utf8)
+    
+    var vertices: [Vertex] = []
+    var uvs: [SIMD2<Float>] = []
+    var indices: [UInt32] = []
+    
+    let lines = fileContents.split(separator: "\n")
+    
+    for line in lines
+    {
+        let splitLine = line.split(separator: " ")
+        if (splitLine.count > 0)
+        {
+            if (splitLine[0] == "v")
+            {
+                var v = Vertex()
+                v.position = SIMD4<Float>(Float(splitLine[1])!,
+                                          Float(splitLine[2])!,
+                                          Float(splitLine[3])!,
+                                          1.0)
+                v.materialIndex = Int32(materialIndex)
+                vertices.append(v)
+            }
+            else if (splitLine[0] == "vt")
+            {
+                uvs.append(SIMD2<Float>(Float(splitLine[1])!,
+                                        Float(splitLine[2])!))
+            }
+            else if (splitLine[0] == "f")
+            {
+                for x in 1...3
+                {
+                    let facePoint = splitLine[x].split(separator: "/")
+                    let vIndex = Int(facePoint[0])! - 1
+                    let uvIndex = Int(facePoint[1])! - 1
+                    vertices[vIndex].uv = uvs[uvIndex]
+                    indices.append(UInt32(vIndex))
+                }
+            }
+        }
+    }
+    
+    var obj = Object()
+    obj.indices = indices
+    obj.vertices = vertices
+    return obj
+}
+
+func generateTextures(device: MTLDevice) -> [MTLTexture]
+{
+//    let t = MTLTextureDescriptor()
+//    t.textureType = .type2DArray
+//    t.arrayLength = 2
+//    t.width = 1024
+//    t.height = 1024
+//    t.usage = .shaderRead
+//    t.pixelFormat = .rgba8Unorm
+//    let tex = device.makeTexture(descriptor: t)
+    
+    
+    //let url1 = URL.init(fileURLWithPath: "/Users/Michael/Desktop/blue.png")
+    //let url2 = URL.init(fileURLWithPath: "/Users/Michael/Desktop/red.png")
+
+    let loader = MTKTextureLoader.init(device: device)
+    //let texs = loader.newTextures(URLs: [url1, url2], options: nil, error: nil)
+    
+    let t1 = try! loader.newTexture(name: "blue", scaleFactor: 1.0, bundle: Bundle.main, options: nil)
+    let t2 = try! loader.newTexture(name: "red", scaleFactor: 1.0, bundle: Bundle.main, options: nil)
+    
+    return [t1, t2]
+}
+

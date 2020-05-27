@@ -11,15 +11,23 @@
 #include <simd/simd.h>
 
 
-typedef struct
+struct Vertex
 {
     simd_float4 position;
-} Vertex;
+    simd_float3 normal;
+    simd_float2 uv;
+    int materialIndex;
+};
 
 
-struct Light
+struct PointLight
 {
     simd_float3 position;
+    simd_float3 radiance;
+};
+
+struct DirectionalLight
+{
     simd_float3 direction;
     simd_float3 radiance;
 };

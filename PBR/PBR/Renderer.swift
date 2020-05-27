@@ -17,8 +17,11 @@ class Renderer: NSObject, MTKViewDelegate {
     var movementController: Movement!
     var commandQueue: MTLCommandQueue!
     var vertexBuffer: MTLBuffer!
+    var indexBuffer: MTLBuffer!
     var uniformBuffer: MTLBuffer!
     var renderPipelineState: MTLRenderPipelineState!
+    var scene: Scene!
+    var textures: [MTLTexture]!
 
     init?(renderView: RenderView) {
         super.init()
@@ -30,21 +33,17 @@ class Renderer: NSObject, MTKViewDelegate {
     func initializeRenderer()
     {
         device = self.renderView.device!
+        scene = Scene(device: device)
+        scene.addSceneObject(file: "sphere.obj", materialIndex: 0)
+        scene.addSceneObject(file: "cube.obj", materialIndex: 1)
+        scene.generateAccelerationStructure()
+        
+        textures = generateTextures(device: device)
+        
         commandQueue = device.makeCommandQueue()!
         movementController = Movement(initialScreenSize: renderView.frame.size)
-        
-        var v1 = Vertex()
-        v1.position = SIMD4<Float>(1.0, 0.0, 0.0, 1.0);
-        var v2 = Vertex()
-        v2.position = SIMD4<Float>(1.0, 1.0, 0.0, 1.0);
-        var v3 = Vertex()
-        v3.position = SIMD4<Float>(0.0, 1.0, 0.0, 1.0);
-        
-        let vertices = [v1, v2, v3]
-        
-        fillBuffer(device: device, buffer: &vertexBuffer, data: vertices)
-        
         initializePipelineStates()
+        
     }
     
     func initializePipelineStates()
@@ -98,14 +97,19 @@ class Renderer: NSObject, MTKViewDelegate {
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         commandEncoder.setRenderPipelineState(renderPipelineState)
         
-        commandEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        commandEncoder.setVertexBuffer(scene.sceneVertexBuffer, offset: 0, index: 0)
         commandEncoder.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
-        commandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        
+        commandEncoder.setFragmentTextures(textures, range: 0..<2)
+        commandEncoder.drawIndexedPrimitives(type: .triangle,
+                                             indexCount: scene.sceneIndexBuffer.length / MemoryLayout<UInt32>.stride,
+                                             indexType: .uint32,
+                                             indexBuffer: scene.sceneIndexBuffer,
+                                             indexBufferOffset: 0)
+
         commandEncoder.endEncoding()
         
         commandBuffer.present(renderView.currentDrawable!)
-        commandBuffer.commit()
-        
-        //commandEncoder
+        commandBuffer.commit()        
     }
 }
