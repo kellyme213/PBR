@@ -19,9 +19,9 @@ class Renderer: NSObject, MTKViewDelegate {
     var vertexBuffer: MTLBuffer!
     var indexBuffer: MTLBuffer!
     var uniformBuffer: MTLBuffer!
+    var fragmentUniformBuffer: MTLBuffer!
     var renderPipelineState: MTLRenderPipelineState!
     var scene: Scene!
-    var textures: [MTLTexture]!
 
     init?(renderView: RenderView) {
         super.init()
@@ -34,16 +34,22 @@ class Renderer: NSObject, MTKViewDelegate {
     {
         device = self.renderView.device!
         scene = Scene(device: device)
-        scene.addSceneObject(file: "sphere.obj", materialIndex: 0)
-        scene.addSceneObject(file: "cube.obj", materialIndex: 1)
-        scene.generateAccelerationStructure()
         
-        textures = generateTextures(device: device)
+        var boxMD = MaterialDescriptor()
+        boxMD.baseColor = "boxBaseColor"
+        boxMD.metallic = "boxMetallic"
+        boxMD.roughness = "boxRoughness"
+        boxMD.normal = "boxNormal"
+        boxMD.materialIndex = 0
         
+        scene.addSceneObject(file: "box.obj", material: boxMD)
+        
+        scene.addPointLight(position: simd_float3(0.0, 0.0, 0.0), radiance: simd_float3(repeating: 10.0))
+        
+        scene.generateSceneData()
         commandQueue = device.makeCommandQueue()!
         movementController = Movement(initialScreenSize: renderView.frame.size)
         initializePipelineStates()
-        
     }
     
     func initializePipelineStates()
@@ -57,15 +63,17 @@ class Renderer: NSObject, MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        
         var uniforms = SceneUniforms()
         uniforms.projectionMatrix = movementController.projectionMatrix
         uniforms.viewMatrix = movementController.viewMatrix
-        
         fillBuffer(device: device, buffer: &uniformBuffer, data: [uniforms])
         
-        renderLoop()
+        var fragmentUniforms = RasterizeFragmentUniforms()
+        fragmentUniforms.worldSpaceCameraPosition = movementController.cameraPosition
+        fragmentUniforms.numPointLights = Int32(scene.sceneLights.count)
+        fillBuffer(device: device, buffer: &fragmentUniformBuffer, data: [fragmentUniforms])
         
+        renderLoop()
     }
     
     func keyDown(with theEvent: NSEvent) {
@@ -100,12 +108,17 @@ class Renderer: NSObject, MTKViewDelegate {
         commandEncoder.setVertexBuffer(scene.sceneVertexBuffer, offset: 0, index: 0)
         commandEncoder.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
         
-        commandEncoder.setFragmentTextures(textures, range: 0..<2)
-        commandEncoder.drawIndexedPrimitives(type: .triangle,
-                                             indexCount: scene.sceneIndexBuffer.length / MemoryLayout<UInt32>.stride,
-                                             indexType: .uint32,
-                                             indexBuffer: scene.sceneIndexBuffer,
-                                             indexBufferOffset: 0)
+        commandEncoder.setFragmentBuffer(scene.sceneLightBuffer, offset: 0, index: 0)
+        commandEncoder.setFragmentBuffer(fragmentUniformBuffer, offset: 0, index: 1)
+
+        commandEncoder.setFragmentTexture(scene.sceneBaseColorTextures, index: Int(MATERIAL_BASE_COLOR))
+        commandEncoder.setFragmentTexture(scene.sceneRoughnessTextures, index: Int(MATERIAL_ROUGHNESS))
+        commandEncoder.setFragmentTexture(scene.sceneMetallicTextures, index: Int(MATERIAL_METALLIC))
+        commandEncoder.setFragmentTexture(scene.sceneNormalTextures, index: Int(MATERIAL_NORMAL))
+
+        commandEncoder.drawPrimitives(type: .triangle,
+                                      vertexStart: 0,
+                                      vertexCount: scene.sceneVertexBuffer.length / MemoryLayout<Vertex>.stride)
 
         commandEncoder.endEncoding()
         

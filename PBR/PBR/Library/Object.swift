@@ -11,5 +11,38 @@ import Foundation
 struct Object
 {
     var vertices: [Vertex]!
-    var indices: [UInt32]!
+    var materialDescriptor: MaterialDescriptor!
+}
+
+
+
+struct MaterialDescriptor
+{
+    var baseColor: String!
+    var metallic: String!
+    var roughness: String!
+    var normal: String!
+    var materialIndex: Int!
+    
+    func getTextureString(i: Int32) -> String!
+    {
+        if (i == Int(MATERIAL_BASE_COLOR))
+        {
+            return baseColor
+        }
+        if (i == Int(MATERIAL_METALLIC))
+        {
+            return metallic
+        }
+        if (i == Int(MATERIAL_ROUGHNESS))
+        {
+            return roughness
+        }
+        if (i == Int(MATERIAL_NORMAL))
+        {
+            return normal
+        }
+        
+        return ""
+    }
 }

@@ -188,7 +188,7 @@ func createRenderPassDescriptor(device: MTLDevice, texture: MTLTexture) -> MTLRe
     let renderPassDescriptor = MTLRenderPassDescriptor()
     renderPassDescriptor.colorAttachments[0].texture = texture
     renderPassDescriptor.colorAttachments[0].loadAction = .clear
-    renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+    renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
     let textureDescriptor = MTLTextureDescriptor()
     textureDescriptor.usage = .renderTarget
     textureDescriptor.height = texture.height
@@ -215,15 +215,15 @@ func createRenderPipelineDescriptor(device: MTLDevice, vertexShader: String, fra
     return rpd
 }
 
-func readObj(file: String, materialIndex: Int) -> Object
+func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.0, worldPosition: simd_float3 = simd_float3(repeating: 0.0)) -> Object
 {
     let bundle = Bundle.main
     let path = bundle.path(forResource: file, ofType: nil)!
     let fileContents = try! String.init(contentsOfFile: path, encoding: .utf8)
     
+    var partialVertices: [Vertex] = []
     var vertices: [Vertex] = []
-    var uvs: [SIMD2<Float>] = []
-    var indices: [UInt32] = []
+    var uvs: [simd_float2] = []
     
     let lines = fileContents.split(separator: "\n")
     
@@ -235,59 +235,140 @@ func readObj(file: String, materialIndex: Int) -> Object
             if (splitLine[0] == "v")
             {
                 var v = Vertex()
-                v.position = SIMD4<Float>(Float(splitLine[1])!,
+                v.position = simd_float4(Float(splitLine[1])!,
                                           Float(splitLine[2])!,
                                           Float(splitLine[3])!,
                                           1.0)
-                v.materialIndex = Int32(materialIndex)
-                vertices.append(v)
+                v.materialIndex = Int32(material.materialIndex)
+                partialVertices.append(v)
             }
             else if (splitLine[0] == "vt")
             {
-                uvs.append(SIMD2<Float>(Float(splitLine[1])!,
+                uvs.append(simd_float2(Float(splitLine[1])!,
                                         Float(splitLine[2])!))
             }
             else if (splitLine[0] == "f")
             {
-                for x in 1...3
-                {
-                    let facePoint = splitLine[x].split(separator: "/")
-                    let vIndex = Int(facePoint[0])! - 1
-                    let uvIndex = Int(facePoint[1])! - 1
-                    vertices[vIndex].uv = uvs[uvIndex]
-                    indices.append(UInt32(vIndex))
-                }
+                let facePoint0 = splitLine[1].split(separator: "/")
+                let facePoint1 = splitLine[2].split(separator: "/")
+                let facePoint2 = splitLine[3].split(separator: "/")
+
+                let vIndex0 = Int(facePoint0[0])! - 1
+                let vIndex1 = Int(facePoint1[0])! - 1
+                let vIndex2 = Int(facePoint2[0])! - 1
+                
+                let uvIndex0 = Int(facePoint0[1])! - 1
+                let uvIndex1 = Int(facePoint1[1])! - 1
+                let uvIndex2 = Int(facePoint2[1])! - 1
+                
+                var v0 = Vertex()
+                v0.position = partialVertices[vIndex0].position
+                v0.materialIndex = partialVertices[vIndex0].materialIndex
+                
+                var v1 = Vertex()
+                v1.position = partialVertices[vIndex1].position
+                v1.materialIndex = partialVertices[vIndex1].materialIndex
+                
+                var v2 = Vertex()
+                v2.position = partialVertices[vIndex2].position
+                v2.materialIndex = partialVertices[vIndex2].materialIndex
+                
+                v0.uv = uvs[uvIndex0]
+                v1.uv = uvs[uvIndex1]
+                v2.uv = uvs[uvIndex2]
+                
+                
+                //calculate normal and tangent vectors
+                //http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
+                
+                let dv1 = v1.position.xyz - v0.position.xyz
+                let dv2 = v2.position.xyz - v0.position.xyz
+
+                let duv1 = v1.uv - v0.uv
+                let duv2 = v2.uv - v0.uv
+
+                
+                let r = 1.0 / (duv1.x * duv2.y - duv1.y * duv2.x)
+                let tangent = normalize(r * (dv1 * duv2.y - dv2 * duv1.y))
+                let bitangent = normalize(r * (dv2 * duv1.x - dv1 * duv2.x))
+                let normal = normalize(cross(tangent, bitangent))
+                
+                v0.normal = normal
+                v1.normal = normal
+                v2.normal = normal
+
+                v0.tangent = tangent
+                v1.tangent = tangent
+                v2.tangent = tangent
+                
+                vertices.append(v0)
+                vertices.append(v1)
+                vertices.append(v2)
+                
+                print(dot(normal, tangent))
             }
         }
     }
     
+    for x in 0 ..< vertices.count
+    {
+        vertices[x].position *= scaleFactor
+        vertices[x].position += simd_float4(worldPosition, 0.0)
+        vertices[x].position.w = 1.0
+    }
+    
     var obj = Object()
-    obj.indices = indices
     obj.vertices = vertices
+    obj.materialDescriptor = material
+    
     return obj
 }
 
-func generateTextures(device: MTLDevice) -> [MTLTexture]
+func packTextures(device: MTLDevice, textureNameList: [String]) -> MTLTexture
 {
-//    let t = MTLTextureDescriptor()
-//    t.textureType = .type2DArray
-//    t.arrayLength = 2
-//    t.width = 1024
-//    t.height = 1024
-//    t.usage = .shaderRead
-//    t.pixelFormat = .rgba8Unorm
-//    let tex = device.makeTexture(descriptor: t)
     
+    let commandQueue = device.makeCommandQueue()!
     
-    //let url1 = URL.init(fileURLWithPath: "/Users/Michael/Desktop/blue.png")
-    //let url2 = URL.init(fileURLWithPath: "/Users/Michael/Desktop/red.png")
+    let commandBuffer = commandQueue.makeCommandBuffer()!
+    
+    let blitEncoder = commandBuffer.makeBlitCommandEncoder()!
+    
+    let t = MTLTextureDescriptor()
+    t.textureType = .type2DArray
+    t.arrayLength = textureNameList.count
+    t.width = 1024
+    t.height = 1024
+    t.usage = .shaderRead
+    t.pixelFormat = .rgba8Unorm_srgb
+    let packedTexture = device.makeTexture(descriptor: t)!
 
+    
     let loader = MTKTextureLoader.init(device: device)
-    //let texs = loader.newTextures(URLs: [url1, url2], options: nil, error: nil)
     
-    let t1 = try! loader.newTexture(name: "blue", scaleFactor: 1.0, bundle: Bundle.main, options: nil)
-    let t2 = try! loader.newTexture(name: "red", scaleFactor: 1.0, bundle: Bundle.main, options: nil)
+    var x = 0
+    for textureName in textureNameList
+    {
+        if textureName == ""
+        {
+            x += 1
+            continue
+        }
+        
+        let tempTex = try! loader.newTexture(name: textureName, scaleFactor: 1.0, bundle: Bundle.main, options: nil)
+        blitEncoder.copy(from: tempTex,
+                         sourceSlice: 0,
+                         sourceLevel: 0,
+                         to: packedTexture,
+                         destinationSlice: x,
+                         destinationLevel: 0,
+                         sliceCount: 1,
+                         levelCount: 1)
+        x += 1
+    }
     
-    return [t1, t2]
+    blitEncoder.endEncoding()
+    commandBuffer.commit()
+    
+    return packedTexture
 }
 

@@ -11,10 +11,16 @@
 #include <simd/simd.h>
 
 
+#define MATERIAL_BASE_COLOR 0
+#define MATERIAL_METALLIC 1
+#define MATERIAL_ROUGHNESS 2
+#define MATERIAL_NORMAL 3
+
 struct Vertex
 {
     simd_float4 position;
     simd_float3 normal;
+    simd_float3 tangent;
     simd_float2 uv;
     int materialIndex;
 };
@@ -36,6 +42,12 @@ struct SceneUniforms
 {
     simd_float4x4 projectionMatrix;
     simd_float4x4 viewMatrix;
+};
+
+struct RasterizeFragmentUniforms
+{
+    simd_float3 worldSpaceCameraPosition;
+    int numPointLights;
 };
 
 #endif /* ShaderStructs_h */

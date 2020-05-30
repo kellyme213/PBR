@@ -11,6 +11,7 @@
 		4C5E34BE247E06F30088638B /* Object.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5E34BD247E06F30088638B /* Object.swift */; };
 		4C5E34C0247E07EA0088638B /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5E34BF247E07EA0088638B /* Scene.swift */; };
 		4C5E34C2247E146D0088638B /* cube.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E34C1247E146D0088638B /* cube.obj */; };
+		4C5E34C42480DA010088638B /* box.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E34C32480DA010088638B /* box.obj */; };
 		4CAB68B82474C15A0094C0F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAB68B72474C15A0094C0F6 /* AppDelegate.swift */; };
 		4CAB68C12474C15C0094C0F6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4CAB68C02474C15C0094C0F6 /* Assets.xcassets */; };
 		4CAB68C42474C15C0094C0F6 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4CAB68C22474C15C0094C0F6 /* Main.storyboard */; };
@@ -28,6 +29,7 @@
 		4C5E34BD247E06F30088638B /* Object.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Object.swift; sourceTree = "<group>"; };
 		4C5E34BF247E07EA0088638B /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
 		4C5E34C1247E146D0088638B /* cube.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = cube.obj; sourceTree = "<group>"; };
+		4C5E34C32480DA010088638B /* box.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = box.obj; sourceTree = "<group>"; };
 		4CAB68B42474C15A0094C0F6 /* PBR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PBR.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CAB68B72474C15A0094C0F6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4CAB68C02474C15C0094C0F6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 				4CAB68E62474C3D00094C0F6 /* Library */,
 				4CAB68D52474C1E60094C0F6 /* MetalKeys.swift */,
 				4CAB68D42474C1E60094C0F6 /* Rasterizer.metal */,
+				4C5E34C32480DA010088638B /* box.obj */,
 				4CAB68D22474C1E60094C0F6 /* Renderer.swift */,
 				4C5E34C1247E146D0088638B /* cube.obj */,
 				4C5E34BF247E07EA0088638B /* Scene.swift */,
@@ -165,6 +168,7 @@
 			files = (
 				4C5E34C2247E146D0088638B /* cube.obj in Resources */,
 				4CAB68C12474C15C0094C0F6 /* Assets.xcassets in Resources */,
+				4C5E34C42480DA010088638B /* box.obj in Resources */,
 				4C5E34BC247DFB620088638B /* sphere.obj in Resources */,
 				4CAB68C42474C15C0094C0F6 /* Main.storyboard in Resources */,
 			);
