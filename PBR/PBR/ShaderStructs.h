@@ -40,6 +40,15 @@ struct DirectionalLight
     float lightRadius;
 };
 
+struct AreaLight
+{
+    simd_float3 position;
+    simd_float3 direction;
+    simd_float3 irradiance;
+    float lightRadius;
+    simd_float2 extent;
+};
+
 struct SceneUniforms
 {
     simd_float4x4 projectionMatrix;
@@ -50,6 +59,8 @@ struct RasterizeFragmentUniforms
 {
     simd_float3 worldSpaceCameraPosition;
     int numPointLights;
+    int numAreaLights;
+    int numAreaLightSamples;
 };
 
 #endif /* ShaderStructs_h */

@@ -35,18 +35,7 @@ class Renderer: NSObject, MTKViewDelegate {
         device = self.renderView.device!
         scene = Scene(device: device)
         
-        var boxMD = MaterialDescriptor()
-        boxMD.baseColor = "boxBaseColor"
-        boxMD.metallic = "boxMetallic"
-        boxMD.roughness = "boxRoughness"
-        boxMD.normal = "boxNormal"
-        boxMD.materialIndex = 0
-        
-        scene.addSceneObject(file: "box.obj", material: boxMD)
-        
-        scene.addPointLight(position: simd_float3(0.0, 0.0, 0.0),
-                            irradiance: simd_float3(repeating: 10.0),
-                            lightRadius: 3.0)
+        loadScene1()
         
         scene.generateSceneData()
         commandQueue = device.makeCommandQueue()!
@@ -74,7 +63,9 @@ class Renderer: NSObject, MTKViewDelegate {
         
         var fragmentUniforms = RasterizeFragmentUniforms()
         fragmentUniforms.worldSpaceCameraPosition = movementController.cameraPosition
-        fragmentUniforms.numPointLights = Int32(scene.sceneLights.count)
+        fragmentUniforms.numPointLights = Int32(scene.scenePointLights.count)
+        fragmentUniforms.numAreaLights = Int32(scene.sceneAreaLights.count)
+        fragmentUniforms.numAreaLightSamples = 9;
         fillBuffer(device: device, buffer: &fragmentUniformBuffer, data: [fragmentUniforms])
     }
 
@@ -90,8 +81,9 @@ class Renderer: NSObject, MTKViewDelegate {
         commandEncoder.setVertexBuffer(scene.sceneVertexBuffer, offset: 0, index: 0)
         commandEncoder.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
         
-        commandEncoder.setFragmentBuffer(scene.sceneLightBuffer, offset: 0, index: 0)
-        commandEncoder.setFragmentBuffer(fragmentUniformBuffer, offset: 0, index: 1)
+        commandEncoder.setFragmentBuffer(fragmentUniformBuffer, offset: 0, index: 0)
+        commandEncoder.setFragmentBuffer(scene.scenePointLightBuffer, offset: 0, index: 1)
+        commandEncoder.setFragmentBuffer(scene.sceneAreaLightBuffer, offset: 0, index: 2)
 
         commandEncoder.setFragmentTexture(scene.sceneBaseColorTextures, index: Int(MATERIAL_BASE_COLOR))
         commandEncoder.setFragmentTexture(scene.sceneRoughnessTextures, index: Int(MATERIAL_ROUGHNESS))

@@ -15,14 +15,16 @@ import Metal
 class Scene
 {
     var sceneObjects: [Object] = []
-    var sceneLights: [PointLight] = []
+    var scenePointLights: [PointLight] = []
+    var sceneAreaLights: [AreaLight] = []
     var sceneVertexBuffer: MTLBuffer!
     var device: MTLDevice
     var sceneBaseColorTextures: MTLTexture!
     var sceneRoughnessTextures: MTLTexture!
     var sceneMetallicTextures: MTLTexture!
     var sceneNormalTextures: MTLTexture!
-    var sceneLightBuffer: MTLBuffer!
+    var scenePointLightBuffer: MTLBuffer!
+    var sceneAreaLightBuffer: MTLBuffer!
 
     
     init(device: MTLDevice)
@@ -40,8 +42,20 @@ class Scene
     
     func addPointLight(position: simd_float3, irradiance: simd_float3, lightRadius: Float)
     {
-        let p = PointLight(position: position, irradiance: irradiance, lightRadius: lightRadius)
-        sceneLights.append(p)
+        let l = PointLight(position: position,
+                           irradiance: irradiance,
+                           lightRadius: lightRadius)
+        scenePointLights.append(l)
+    }
+    
+    func addAreaLight(position: simd_float3, direction: simd_float3, irradiance: simd_float3, lightRadius: Float, extent: simd_float2)
+    {
+        let l = AreaLight(position: position,
+                          direction: direction,
+                          irradiance: irradiance,
+                          lightRadius: lightRadius,
+                          extent: extent)
+        sceneAreaLights.append(l)
     }
     
     func generateSceneData()
@@ -63,7 +77,28 @@ class Scene
         }
         
         fillBuffer(device: device, buffer: &sceneVertexBuffer, data: sceneVertices)
-        fillBuffer(device: device, buffer: &sceneLightBuffer, data: sceneLights)
+        
+        if (scenePointLights.count != 0)
+        {
+            fillBuffer(device: device, buffer: &scenePointLightBuffer, data: scenePointLights)
+        }
+        else //no lights
+        {
+            //make an empty buffer with spot for 1 light so that the buffer is not null
+            //when attempting to bind it
+            fillBuffer(device: device, buffer: &scenePointLightBuffer, data: [], size: MemoryLayout<PointLight>.stride)
+        }
+        
+        if (sceneAreaLights.count != 0)
+        {
+            fillBuffer(device: device, buffer: &sceneAreaLightBuffer, data: sceneAreaLights)
+        }
+        else //no lights
+        {
+            //make an empty buffer with spot for 1 light so that the buffer is not null
+            //when attempting to bind it
+            fillBuffer(device: device, buffer: &sceneAreaLightBuffer, data: [], size: MemoryLayout<AreaLight>.stride)
+        }
     }
     
     //gathers the texture names from all of the materials for a

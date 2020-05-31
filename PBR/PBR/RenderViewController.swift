@@ -17,7 +17,7 @@ class RenderViewController: NSViewController
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.view.setFrameSize(CGSize(width: 480, height: 270))
+        self.view.setFrameSize(CGSize(width: 960, height: 540))
                 
         let defaultDevice = MTLCreateSystemDefaultDevice()!
                 

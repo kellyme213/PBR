@@ -40,11 +40,48 @@ vertex VertexOut vertexShader
     return v;
 }
 
+float3 sampleLight(float3 n, float3 baseColor, float roughness, float metalness,
+                   float3 lightPosition, float3 worldPosition, float3 cameraPosition,
+                   float lightRadius, float3 irradiance, float kConstant)
+{
+    float3 dirToLight = lightPosition - worldPosition;
+    float distToLight = length(dirToLight);
+    
+    //direction towards the light
+    float3 wi = normalize(dirToLight);
+    
+    float falloff = calculateFalloff(lightRadius, distToLight);
+
+    //incoming radiance along wi
+    float3 Li = kConstant * irradiance * falloff;
+    //might want to divide by light area
+    
+    //direction towards the camera/out of the surface
+    float3 wo = normalize(cameraPosition - worldPosition);
+    
+    //half vector
+    float3 h = normalize(wi + wo);
+    
+    //various cosine/dot product terms used in BRDFs and the rendering equation
+    float cosI = max(dot(n, wi), 0.0);
+    float cosO = max(dot(n, wo), 0.0);
+    float cosH = max(dot(n, h), 0.0);
+    float cosD = abs(cosH - cosO);
+
+    float3 fr = disneyBRDF(cosI, cosO, cosH, cosD, baseColor, roughness, metalness);
+    
+    //contribution of this light to the rendering equation.
+    //The integral of the rendering equation is approximated by the loop iterating
+    //over all of the lights.
+    return fr * Li * cosI;
+}
+
 fragment float4 fragmentShader
 (
     VertexOut in [[stage_in]],
-    const device PointLight* lights [[buffer(0)]],
-    const device RasterizeFragmentUniforms& uniforms [[buffer(1)]],
+    const device RasterizeFragmentUniforms& uniforms [[buffer(0)]],
+    const device PointLight* pointLights [[buffer(1)]],
+    const device AreaLight* areaLights [[buffer(2)]],
     const texture2d_array<float, access::sample> baseColorTexture [[texture(MATERIAL_BASE_COLOR)]],
     const texture2d_array<float, access::sample> metallicTexture  [[texture(MATERIAL_METALLIC)]],
     const texture2d_array<float, access::sample> roughnessTexture [[texture(MATERIAL_ROUGHNESS)]],
@@ -79,36 +116,67 @@ fragment float4 fragmentShader
         
     for (int x = 0; x < uniforms.numPointLights; x++)
     {
-        PointLight light = lights[x];
-        float3 dirToLight = light.position - in.worldSpacePosition;
-        float distToLight = length(dirToLight);
+        PointLight light = pointLights[x];
         
-        //direction towards the light
-        float3 wi = normalize(dirToLight);
+        //radiance caused by this light source
+        float3 partialRadiance = sampleLight(n, baseColor, roughness,
+                                             metalness, light.position,
+                                             in.worldSpacePosition,
+                                             uniforms.worldSpaceCameraPosition,
+                                             light.lightRadius,
+                                             light.irradiance, 1.0);
         
-        float falloff = calculateFalloff(light.lightRadius, distToLight);
+        //integrating the rendering equation
+        Lo += partialRadiance;
+    }
+    
+    int sqrtSamples = sqrt((float) uniforms.numAreaLightSamples);
+    
+    for (int x = 0; x < uniforms.numAreaLights; x++)
+    {
+        AreaLight light = areaLights[x];
+        float3 lightLeft = normalize(cross(float3(0.001, 1.0, 0.001), light.direction));
+        float3 lightUp = normalize(cross(lightLeft, light.direction));
         
-        //incoming radiance along wi
-        float3 Li = light.irradiance * falloff; //might want to divide by 4pi
-        
-        //direction towards the camera/out of the surface
-        float3 wo = normalize(uniforms.worldSpaceCameraPosition - in.worldSpacePosition);
-        
-        //half vector
-        float3 h = normalize(wi + wo);
-        
-        //various cosine/dot product terms used in BRDFs and the rendering equation
-        float cosI = max(dot(n, wi), 0.0);
-        float cosO = max(dot(n, wo), 0.0);
-        float cosH = max(dot(n, h), 0.0);
-        float cosD = abs(cosH - cosO);
+        //sample the areaLight over multiple points on the light. This is inefficient for real time,
+        //and just intended to give a rough idea of the light before it is ray traced.
+        for (int y = 0; y < uniforms.numAreaLightSamples; y++)
+        {
+            float i = y % sqrtSamples;
+            float j = y / sqrtSamples;
+            
+            i /= sqrtSamples;
+            j /= sqrtSamples;
+            
+            i -= 0.5;
+            j -= 0.5;
+            
+            float3 lightPoint = light.position +
+                                (light.extent.x * i * lightLeft) +
+                                (light.extent.y * j * lightUp);
+            
+            float3 dirToLight = normalize(lightPoint - in.worldSpacePosition);
 
-        float3 fr = disneyBRDF(cosI, cosO, cosH, cosD, baseColor, roughness, metalness);
-        
-        //contribution of this light to the rendering equation.
-        //The integral of the rendering equation is approximated by the for loop iterating
-        //over all of the lights.
-        Lo += fr * Li * cosI;
+            //the dot product makes sure that geometry that the area light is not pointed
+            //towards does not get lit by the light.
+            //dividing my numSamples ensures that all of the samples added together adds to the
+            //total amount of irradiance that exits the light.
+            float k = (dot(dirToLight, light.direction) < 0.0) / (float) uniforms.numAreaLightSamples;
+            
+            
+            //radiance caused by this light source
+            float3 partialRadiance = sampleLight(n, baseColor, roughness,
+                                                 metalness, lightPoint,
+                                                 in.worldSpacePosition,
+                                                 uniforms.worldSpaceCameraPosition,
+                                                 light.lightRadius,
+                                                 light.irradiance, k);
+            
+            //integrating the rendering equation
+            Lo += partialRadiance;
+        }
+                
+
     }
     
     return float4(Lo, 1.0);
