@@ -22,6 +22,8 @@
 		4CAB68DC2474C1E60094C0F6 /* MetalKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAB68D52474C1E60094C0F6 /* MetalKeys.swift */; };
 		4CAB68E92474C3D60094C0F6 /* Movement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAB68E72474C3D60094C0F6 /* Movement.swift */; };
 		4CAB68EA2474C3D60094C0F6 /* UtilityFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAB68E82474C3D60094C0F6 /* UtilityFunctions.swift */; };
+		4CE467AE248352C3000E4436 /* brdf.metal in Sources */ = {isa = PBXBuildFile; fileRef = 4CE467AD248352C3000E4436 /* brdf.metal */; };
+		4CE467B024835EF7000E4436 /* Renderer+EventHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE467AF24835EF7000E4436 /* Renderer+EventHandling.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +47,9 @@
 		4CAB68DD2474C2910094C0F6 /* PBR-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PBR-Bridging-Header.h"; sourceTree = "<group>"; };
 		4CAB68E72474C3D60094C0F6 /* Movement.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Movement.swift; sourceTree = "<group>"; };
 		4CAB68E82474C3D60094C0F6 /* UtilityFunctions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UtilityFunctions.swift; sourceTree = "<group>"; };
+		4CE467AC2483529B000E4436 /* brdf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = brdf.h; sourceTree = "<group>"; };
+		4CE467AD248352C3000E4436 /* brdf.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = brdf.metal; sourceTree = "<group>"; };
+		4CE467AF24835EF7000E4436 /* Renderer+EventHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Renderer+EventHandling.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,11 +87,14 @@
 				4CAB68D42474C1E60094C0F6 /* Rasterizer.metal */,
 				4C5E34C32480DA010088638B /* box.obj */,
 				4CAB68D22474C1E60094C0F6 /* Renderer.swift */,
+				4CE467AF24835EF7000E4436 /* Renderer+EventHandling.swift */,
 				4C5E34C1247E146D0088638B /* cube.obj */,
 				4C5E34BF247E07EA0088638B /* Scene.swift */,
 				4CAB68D32474C1E60094C0F6 /* RenderView.swift */,
 				4CAB68D02474C1E60094C0F6 /* RenderViewController.swift */,
 				4CAB68D62474C1E60094C0F6 /* ShaderStructs.h */,
+				4CE467AC2483529B000E4436 /* brdf.h */,
+				4CE467AD248352C3000E4436 /* brdf.metal */,
 				4C5E34BB247DFB610088638B /* sphere.obj */,
 				4CAB68B72474C15A0094C0F6 /* AppDelegate.swift */,
 				4CAB68C02474C15C0094C0F6 /* Assets.xcassets */,
@@ -181,6 +189,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4CE467B024835EF7000E4436 /* Renderer+EventHandling.swift in Sources */,
+				4CE467AE248352C3000E4436 /* brdf.metal in Sources */,
 				4CAB68D72474C1E60094C0F6 /* RenderViewController.swift in Sources */,
 				4CAB68DC2474C1E60094C0F6 /* MetalKeys.swift in Sources */,
 				4C5E34C0247E07EA0088638B /* Scene.swift in Sources */,

@@ -9,6 +9,15 @@
 import Foundation
 import simd
 
+//this class handles moving the camera around the scene using the mouse and keyboard and
+//generates the view and projection matrices
+
+//  W/S - forwards and backwards
+//  A/D - left and right
+//  Q/E - up and down
+//  mouse click and drag - moves the camera direction based on the arcball rotation model
+//  spacebar - resets camera back to default position and direction
+
 class Movement
 {
     let defaultCameraPosition: SIMD3<Float> = SIMD3<Float>(0.0, 0.0, 5.0)
@@ -125,4 +134,31 @@ class Movement
         
         updateViewMatrix()
     }
+}
+
+//https://braintrekking.wordpress.com/2012/08/21/tutorial-of-arcball-without-quaternions/
+func createArcballCameraDirection(x: Float, y: Float) -> SIMD3<Float>
+{
+    var newCameraDirection = SIMD3<Float>(0,0,0)
+    let d = x * x + y * y
+    let ballRadius: Float = 1.0
+    
+    if (d > ballRadius * ballRadius)
+    {
+        newCameraDirection = SIMD3<Float>(x, y, 0.0)
+    }
+    else
+    {
+        newCameraDirection = SIMD3<Float>(x, y, Float(sqrt(ballRadius * ballRadius - d)))
+    }
+    
+    if (dot(newCameraDirection, newCameraDirection) > 0.001)
+    {
+        newCameraDirection = normalize(newCameraDirection)
+    }
+    else
+    {
+        print("BAD")
+    }
+    return newCameraDirection
 }

@@ -5,7 +5,6 @@
   },
   "levels" : [
     {
-      "filename" : "DefaultMaterial_Normal.png",
       "mipmap-level" : "base"
     }
   ]

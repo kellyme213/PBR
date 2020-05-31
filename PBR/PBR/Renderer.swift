@@ -44,7 +44,9 @@ class Renderer: NSObject, MTKViewDelegate {
         
         scene.addSceneObject(file: "box.obj", material: boxMD)
         
-        scene.addPointLight(position: simd_float3(0.0, 0.0, 0.0), radiance: simd_float3(repeating: 10.0))
+        scene.addPointLight(position: simd_float3(0.0, 0.0, 0.0),
+                            irradiance: simd_float3(repeating: 10.0),
+                            lightRadius: 3.0)
         
         scene.generateSceneData()
         commandQueue = device.makeCommandQueue()!
@@ -58,11 +60,13 @@ class Renderer: NSObject, MTKViewDelegate {
         renderPipelineState = try! device.makeRenderPipelineState(descriptor: d)
     }
     
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        movementController.updateScreenSize(newSize: size)
+    func draw(in view: MTKView) {
+        fillUniformBuffers()
+        renderLoop()
     }
     
-    func draw(in view: MTKView) {
+    func fillUniformBuffers()
+    {
         var uniforms = SceneUniforms()
         uniforms.projectionMatrix = movementController.projectionMatrix
         uniforms.viewMatrix = movementController.viewMatrix
@@ -72,30 +76,8 @@ class Renderer: NSObject, MTKViewDelegate {
         fragmentUniforms.worldSpaceCameraPosition = movementController.cameraPosition
         fragmentUniforms.numPointLights = Int32(scene.sceneLights.count)
         fillBuffer(device: device, buffer: &fragmentUniformBuffer, data: [fragmentUniforms])
-        
-        renderLoop()
     }
-    
-    func keyDown(with theEvent: NSEvent) {
-        movementController.keyDown(keyCode: Int(theEvent.keyCode))
-        
-    }
-    
-    func keyUp(with theEvent: NSEvent) {
-    }
-    
-    func mouseUp(with event: NSEvent) {
-    }
-    
-    func mouseDown(with event: NSEvent) {
-        movementController.mouseDown(locationInWindow: event.locationInWindow,
-                                     frame: event.window!.frame)
-    }
-    
-    func mouseDragged(with event: NSEvent) {
-        movementController.mouseDragged(locationInWindow: event.locationInWindow,
-                                        frame: event.window!.frame)
-    }
+
     
     func renderLoop()
     {

@@ -1,3 +1,5 @@
+//keycodes for use in movement.swift and other files as needed
+
 let KEY_A = 0
 let KEY_S = 1
 let KEY_D = 2

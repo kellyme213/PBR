@@ -29,13 +29,15 @@ struct Vertex
 struct PointLight
 {
     simd_float3 position;
-    simd_float3 radiance;
+    simd_float3 irradiance;
+    float lightRadius;
 };
 
 struct DirectionalLight
 {
     simd_float3 direction;
-    simd_float3 radiance;
+    simd_float3 irradiance;
+    float lightRadius;
 };
 
 struct SceneUniforms

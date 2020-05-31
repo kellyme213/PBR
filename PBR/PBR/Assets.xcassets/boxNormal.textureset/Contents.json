@@ -5,6 +5,11 @@
   },
   "textures" : [
     {
+      "filename" : "Universal 1x.mipmapset",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
       "filename" : "Universal.mipmapset",
       "idiom" : "universal"
     }

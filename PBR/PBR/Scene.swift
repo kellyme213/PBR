@@ -10,6 +10,8 @@ import Foundation
 import MetalPerformanceShaders
 import Metal
 
+//contains all of the objects, lights, and materials in the scene and puts all of the data
+//into buffers to be used in rendering
 class Scene
 {
     var sceneObjects: [Object] = []
@@ -36,9 +38,9 @@ class Scene
         sceneObjects.append(readObj(file: file, material: material, scaleFactor: scaleFactor, worldPosition: worldPosition))
     }
     
-    func addPointLight(position: simd_float3, radiance: simd_float3)
+    func addPointLight(position: simd_float3, irradiance: simd_float3, lightRadius: Float)
     {
-        let p = PointLight(position: position, radiance: radiance)
+        let p = PointLight(position: position, irradiance: irradiance, lightRadius: lightRadius)
         sceneLights.append(p)
     }
     
@@ -49,6 +51,8 @@ class Scene
         generateAccelerationStructure()
     }
     
+    //combine all object vertices together in a single buffer so
+    //that the vertices can be rendered/put into a ray tracing acceleration structure.
     func generateSceneBuffers()
     {
         var sceneVertices: [Vertex] = []
@@ -59,10 +63,12 @@ class Scene
         }
         
         fillBuffer(device: device, buffer: &sceneVertexBuffer, data: sceneVertices)
-        
         fillBuffer(device: device, buffer: &sceneLightBuffer, data: sceneLights)
     }
     
+    //gathers the texture names from all of the materials for a
+    //specific texture type (baseColor, metallic, normal)
+    //so that the textures can be loaded and packed together.
     func getTextureNameListForIndex(i: Int32) -> [String]
     {
         var list: [String] = []
@@ -96,6 +102,7 @@ class Scene
                                               textureNameList: getTextureNameListForIndex(i: MATERIAL_NORMAL))
     }
     
+    //used for ray tracing
     func generateAccelerationStructure()
     {
         let accelerationStructure = MPSTriangleAccelerationStructure(device: device)

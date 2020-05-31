@@ -8,6 +8,7 @@
 
 #include <metal_stdlib>
 #import "ShaderStructs.h"
+#include "brdf.h"
 using namespace metal;
 
 struct VertexOut
@@ -36,7 +37,6 @@ vertex VertexOut vertexShader
     v.normal = vert.normal;
     v.tangent = vert.tangent;
     
-        
     return v;
 }
 
@@ -52,52 +52,66 @@ fragment float4 fragmentShader
 )
 {
     constexpr sampler s(address::clamp_to_edge, filter::linear);
-
     
     float3 baseColor = baseColorTexture.sample(s, in.uv, in.id).xyz;
-    float metallic = metallicTexture.sample(s, in.uv, in.id).r;
+    float metalness = metallicTexture.sample(s, in.uv, in.id).r;
     float roughness = roughnessTexture.sample(s, in.uv, in.id).r;
-    float3 tempNormal = normalize(normalTexture.sample(s, in.uv, in.id).xyz);
     
+    //sqrt is needed when computing textureNormal because i havent been
+    //able to import my normal map as a linear rgb only as srgb and i guess
+    //the sqrt is a way to convert between the two???
+    //it looks close enough and I am tired of dealing with texture formats so it will
+    //remain a known bug that i do not intend to fix anytime soon.
+    //I think it has something to do with gamma correction
+    //https://www.gamasutra.com/blogs/RobertBasler/20131122/205462/Three_Normal_Mapping_Techniques_Explained_For_the_Mathematically_Uninclined.php?print=1
+    //mentions something similar to this issue in the Gamma and Normal Maps section
+    
+    //generate the TBN matrix so that the textureNormal can be transformed
+    //from tangent space to world space.
+    //http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
+    float3 textureNormal = sqrt(normalize(normalTexture.sample(s, in.uv, in.id).xyz)); //see above
     float3 bitangent = cross(in.normal, in.tangent);
+    float3x3 tbn = float3x3(in.tangent, bitangent, in.normal);
+    float3 n = normalize(tbn * (2.0 * textureNormal - 1.0));
     
-    
-    float3x3 tbn = transpose(float3x3(in.tangent, bitangent, in.normal));
-    
-    float3 n = normalize(tbn * (2.0 * tempNormal - 1.0));
-    
-    //normal mapping does not work at the moment, just using the passed in normal for now...
-    n = in.normal;
-    
+    //total radiance leaving the surface
     float3 Lo = float3(0.0, 0.0, 0.0);
-    
+        
     for (int x = 0; x < uniforms.numPointLights; x++)
     {
         PointLight light = lights[x];
         float3 dirToLight = light.position - in.worldSpacePosition;
         float distToLight = length(dirToLight);
+        
+        //direction towards the light
         float3 wi = normalize(dirToLight);
         
-        float falloff = (1.0 / (distToLight * distToLight));
+        float falloff = calculateFalloff(light.lightRadius, distToLight);
         
-        float3 Li = light.radiance * falloff; //might want to divide by 4pi
+        //incoming radiance along wi
+        float3 Li = light.irradiance * falloff; //might want to divide by 4pi
         
+        //direction towards the camera/out of the surface
         float3 wo = normalize(uniforms.worldSpaceCameraPosition - in.worldSpacePosition);
         
+        //half vector
+        float3 h = normalize(wi + wo);
         
-        //diffuse BRDF
+        //various cosine/dot product terms used in BRDFs and the rendering equation
+        float cosI = max(dot(n, wi), 0.0);
+        float cosO = max(dot(n, wo), 0.0);
+        float cosH = max(dot(n, h), 0.0);
+        float cosD = abs(cosH - cosO);
+
+        float3 fr = disneyBRDF(cosI, cosO, cosH, cosD, baseColor, roughness, metalness);
         
-        float3 fr = baseColor / M_PI_F;
-        
-        Lo += fr * Li * max(0.0f, dot(wi, n));
+        //contribution of this light to the rendering equation.
+        //The integral of the rendering equation is approximated by the for loop iterating
+        //over all of the lights.
+        Lo += fr * Li * cosI;
     }
     
-    
-    
-
     return float4(Lo, 1.0);
-
-    //return float4((n + 1.0) / 2.0, 1.0);
 }
 
 

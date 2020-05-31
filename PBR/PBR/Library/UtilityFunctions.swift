@@ -14,7 +14,7 @@ import MetalPerformanceShaders
 
 let rayStride = 48;
 let intersectionStride = MemoryLayout<MPSIntersectionDistancePrimitiveIndexCoordinates>.stride
-let patchSize: Float = 0.02
+
 
 // Generic matrix math utility functions
 func matrix4x4_rotation(radians: Float, axis: SIMD3<Float>) -> matrix_float4x4 {
@@ -76,8 +76,14 @@ extension SIMD4
 }
 
 
+//TODO: modify fillBuffer and createBuffer so that buffers can be created with options
+//other than storageModeShared.
 
-
+//fillBuffer fills a buffer with data
+//if the buffer has not been created yet, the buffer is created before filling.
+//if size is not specified, then the buffer will only be able to contain the data contained
+//in the data array. If size is specified, the buffer will be allocated to that size, which
+//can be larger than the size of the data array.
 func fillBuffer<T>(device: MTLDevice, buffer: inout MTLBuffer?, data: [T], size: Int = 0)
 {
     if (buffer == nil)
@@ -115,34 +121,6 @@ func createBuffer<T>(device: MTLDevice, data: [T], size: Int = 0) -> MTLBuffer!
 }
 
 
-//https://braintrekking.wordpress.com/2012/08/21/tutorial-of-arcball-without-quaternions/
-func createArcballCameraDirection(x: Float, y: Float) -> SIMD3<Float>
-{
-    var newCameraDirection = SIMD3<Float>(0,0,0)
-    let d = x * x + y * y
-    let ballRadius: Float = 1.0
-    
-    if (d > ballRadius * ballRadius)
-    {
-        newCameraDirection = SIMD3<Float>(x, y, 0.0)
-    }
-    else
-    {
-        newCameraDirection = SIMD3<Float>(x, y, Float(sqrt(ballRadius * ballRadius - d)))
-    }
-    
-    if (dot(newCameraDirection, newCameraDirection) > 0.001)
-    {
-        newCameraDirection = normalize(newCameraDirection)
-    }
-    else
-    {
-        print("BAD")
-    }
-    return newCameraDirection
-}
-
-
 
 
 func createRandomTexture(device: MTLDevice, width: Int, height: Int, usage: MTLTextureUsage = .shaderRead) -> MTLTexture
@@ -170,19 +148,7 @@ func createRandomTexture(device: MTLDevice, width: Int, height: Int, usage: MTLT
     
 }
 
-func angleBetween(a: SIMD3<Float>, b: SIMD3<Float>) -> Float
-{
-    let crossP = cross(a, b)
-    let dotP = dot(normalize(a), normalize(b))
-    var angleBetween = 180 * (acos(dotP) / 3.14)
-    if (dot(crossP, SIMD3<Float>(0.01, 0.01, 0.99)) < 0.0)
-    {
-        angleBetween = 360 - angleBetween
-    }
-    
-    return angleBetween
-}
-
+//create a render pass descriptor with a depth attachment
 func createRenderPassDescriptor(device: MTLDevice, texture: MTLTexture) -> MTLRenderPassDescriptor
 {
     let renderPassDescriptor = MTLRenderPassDescriptor()
@@ -215,6 +181,11 @@ func createRenderPipelineDescriptor(device: MTLDevice, vertexShader: String, fra
     return rpd
 }
 
+//this function reads in an obj file from the asset bundle and
+//generates vertices and normal vectors for rendering
+//currently, the function only supports triangle faces. Vertices are read in from model space
+//and converted to world space in this function. Only scaling and translation transformations
+//are currently supported.
 func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.0, worldPosition: simd_float3 = simd_float3(repeating: 0.0)) -> Object
 {
     let bundle = Bundle.main
@@ -249,6 +220,9 @@ func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.
             }
             else if (splitLine[0] == "f")
             {
+                //TODO: support faces with more than 3 vertices
+                
+                //extract the vertex and uv indexes
                 let facePoint0 = splitLine[1].split(separator: "/")
                 let facePoint1 = splitLine[2].split(separator: "/")
                 let facePoint2 = splitLine[3].split(separator: "/")
@@ -261,6 +235,7 @@ func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.
                 let uvIndex1 = Int(facePoint1[1])! - 1
                 let uvIndex2 = Int(facePoint2[1])! - 1
                 
+                //generate 3 new vertices and set their uv coordinates
                 var v0 = Vertex()
                 v0.position = partialVertices[vIndex0].position
                 v0.materialIndex = partialVertices[vIndex0].materialIndex
@@ -278,7 +253,7 @@ func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.
                 v2.uv = uvs[uvIndex2]
                 
                 
-                //calculate normal and tangent vectors
+                //calculate normal and tangent vectors for normal mapping
                 //http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
                 
                 let dv1 = v1.position.xyz - v0.position.xyz
@@ -287,7 +262,6 @@ func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.
                 let duv1 = v1.uv - v0.uv
                 let duv2 = v2.uv - v0.uv
 
-                
                 let r = 1.0 / (duv1.x * duv2.y - duv1.y * duv2.x)
                 let tangent = normalize(r * (dv1 * duv2.y - dv2 * duv1.y))
                 let bitangent = normalize(r * (dv2 * duv1.x - dv1 * duv2.x))
@@ -301,15 +275,16 @@ func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.
                 v1.tangent = tangent
                 v2.tangent = tangent
                 
+                //add the new vertices for this face to the vertex list
                 vertices.append(v0)
                 vertices.append(v1)
-                vertices.append(v2)
-                
-                print(dot(normal, tangent))
+                vertices.append(v2)                
             }
         }
     }
     
+    //TODO: support rotation transformations
+    //transform vertices from model space to world space
     for x in 0 ..< vertices.count
     {
         vertices[x].position *= scaleFactor
@@ -324,13 +299,20 @@ func readObj(file: String, material: MaterialDescriptor, scaleFactor: Float = 1.
     return obj
 }
 
+//This function takes a list of texture names, loads the textures, and stores
+//them in a single texture, which is a metal texture2d_array.
+//As an example, all of the baseColor textures for all materials in a scene
+//will be stored in a single texture array. Then, in the fragment/compute shader,
+//the desired texture slice will be sampled.
+
+//while this implementation will become problematic on scenes with a large number of materials,
+//I am assuming that my test scenes will contain a small number of materials and that
+//all textures will be generated at startup since this is meant to be a ray tracer and not
+//a real time engine.
 func packTextures(device: MTLDevice, textureNameList: [String]) -> MTLTexture
 {
-    
     let commandQueue = device.makeCommandQueue()!
-    
     let commandBuffer = commandQueue.makeCommandBuffer()!
-    
     let blitEncoder = commandBuffer.makeBlitCommandEncoder()!
     
     let t = MTLTextureDescriptor()
@@ -354,7 +336,9 @@ func packTextures(device: MTLDevice, textureNameList: [String]) -> MTLTexture
             continue
         }
         
+        //create temporary texture and copy it over to the corresponing slice.
         let tempTex = try! loader.newTexture(name: textureName, scaleFactor: 1.0, bundle: Bundle.main, options: nil)
+        
         blitEncoder.copy(from: tempTex,
                          sourceSlice: 0,
                          sourceLevel: 0,
