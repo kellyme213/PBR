@@ -29,6 +29,8 @@ class Movement
     var cameraDirection: SIMD3<Float>
     var screenSize: CGSize
     
+    var fieldOfView: Float = 65.0
+    
     init(initialScreenSize: CGSize)
     {
         cameraPosition = defaultCameraPosition
@@ -48,7 +50,7 @@ class Movement
     func updateProjectionMatrix()
     {
         let aspect = Float(screenSize.width) / Float(screenSize.height)
-        projectionMatrix = matrix_perspective_right_hand(fovyRadians: radians_from_degrees(65), aspectRatio:aspect, nearZ: 0.1, farZ: 100.0)
+        projectionMatrix = matrix_perspective_right_hand(fovyRadians: radians_from_degrees(fieldOfView), aspectRatio:aspect, nearZ: 0.1, farZ: 100.0)
     }
     
     func updateViewMatrix()

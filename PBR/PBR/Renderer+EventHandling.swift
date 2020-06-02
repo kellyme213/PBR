@@ -16,10 +16,22 @@ extension Renderer
 {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         movementController.updateScreenSize(newSize: size)
+        updateRayBufferSize(width: Int(size.width), height: Int(size.height))
     }
     
     func keyDown(with theEvent: NSEvent) {
         movementController.keyDown(keyCode: Int(theEvent.keyCode))
+        if (Int(theEvent.keyCode) == KEY_R)
+        {
+            if (renderMode == RENDER_MODE_RASTERIZE)
+            {
+                renderMode = RENDER_MODE_RAY_TRACE
+            }
+            else if (renderMode == RENDER_MODE_RAY_TRACE)
+            {
+                renderMode = RENDER_MODE_RASTERIZE
+            }
+        }
     }
     
     func keyUp(with theEvent: NSEvent) {

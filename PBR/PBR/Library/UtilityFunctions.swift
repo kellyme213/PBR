@@ -356,3 +356,12 @@ func packTextures(device: MTLDevice, textureNameList: [String]) -> MTLTexture
     return packedTexture
 }
 
+
+func makeComputePipelineState(device: MTLDevice, function: String) -> MTLComputePipelineState
+{
+    let defaultLibrary = device.makeDefaultLibrary()!
+    let shader = defaultLibrary.makeFunction(name: function)!
+    
+    return try! device.makeComputePipelineState(function: shader)
+}
+

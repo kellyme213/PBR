@@ -25,7 +25,9 @@ class Scene
     var sceneNormalTextures: MTLTexture!
     var scenePointLightBuffer: MTLBuffer!
     var sceneAreaLightBuffer: MTLBuffer!
-
+    
+    var sceneAccelerationStructure: MPSTriangleAccelerationStructure!
+    var sceneIntersector: MPSRayIntersector!
     
     init(device: MTLDevice)
     {
@@ -140,7 +142,18 @@ class Scene
     //used for ray tracing
     func generateAccelerationStructure()
     {
-        let accelerationStructure = MPSTriangleAccelerationStructure(device: device)
-        accelerationStructure.vertexBuffer = sceneVertexBuffer
+        sceneAccelerationStructure = MPSTriangleAccelerationStructure(device: device)
+        sceneAccelerationStructure.vertexBuffer = sceneVertexBuffer
+        sceneAccelerationStructure.triangleCount = sceneVertexBuffer.length / (MemoryLayout<Vertex>.stride * 3)
+        
+        sceneAccelerationStructure.vertexStride = MemoryLayout<Vertex>.stride
+        
+        sceneAccelerationStructure.rebuild()
+        
+        sceneIntersector = MPSRayIntersector(device: device)
+        sceneIntersector.rayStride = MemoryLayout<Ray>.stride
+        sceneIntersector.rayDataType = .originMaskDirectionMaxDistance
+        sceneIntersector.intersectionDataType = .distancePrimitiveIndexCoordinates
+        //sceneIntersector.intersectionStride = MemoryLayout<Intersection>.stride
     }
 }
