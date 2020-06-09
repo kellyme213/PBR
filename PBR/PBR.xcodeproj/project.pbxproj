@@ -12,6 +12,7 @@
 		4C5E34C0247E07EA0088638B /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5E34BF247E07EA0088638B /* Scene.swift */; };
 		4C5E34C2247E146D0088638B /* cube.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E34C1247E146D0088638B /* cube.obj */; };
 		4C5E34C42480DA010088638B /* box.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E34C32480DA010088638B /* box.obj */; };
+		4C80BBEA2488ACE300912781 /* Renderer+RayTracing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C80BBE92488ACE300912781 /* Renderer+RayTracing.swift */; };
 		4CAB68B82474C15A0094C0F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAB68B72474C15A0094C0F6 /* AppDelegate.swift */; };
 		4CAB68C12474C15C0094C0F6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4CAB68C02474C15C0094C0F6 /* Assets.xcassets */; };
 		4CAB68C42474C15C0094C0F6 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4CAB68C22474C15C0094C0F6 /* Main.storyboard */; };
@@ -34,6 +35,8 @@
 		4C5E34BF247E07EA0088638B /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
 		4C5E34C1247E146D0088638B /* cube.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = cube.obj; sourceTree = "<group>"; };
 		4C5E34C32480DA010088638B /* box.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = box.obj; sourceTree = "<group>"; };
+		4C80BBE92488ACE300912781 /* Renderer+RayTracing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Renderer+RayTracing.swift"; sourceTree = "<group>"; };
+		4C80BBEB2488B15700912781 /* utilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
 		4CAB68B42474C15A0094C0F6 /* PBR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PBR.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CAB68B72474C15A0094C0F6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4CAB68C02474C15C0094C0F6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -90,6 +93,7 @@
 				4CAB68D52474C1E60094C0F6 /* MetalKeys.swift */,
 				4C5E34C32480DA010088638B /* box.obj */,
 				4CAB68D22474C1E60094C0F6 /* Renderer.swift */,
+				4C80BBE92488ACE300912781 /* Renderer+RayTracing.swift */,
 				4CE467B1248364B6000E4436 /* Renderer+SceneLoading.swift */,
 				4CE467AF24835EF7000E4436 /* Renderer+EventHandling.swift */,
 				4C5E34C1247E146D0088638B /* cube.obj */,
@@ -101,6 +105,7 @@
 				4CAB68D42474C1E60094C0F6 /* Rasterizer.metal */,
 				4CE467AD248352C3000E4436 /* brdf.metal */,
 				4CE467B32484A6EC000E4436 /* RayTracing.metal */,
+				4C80BBEB2488B15700912781 /* utilities.h */,
 				4C5E34BB247DFB610088638B /* sphere.obj */,
 				4CAB68B72474C15A0094C0F6 /* AppDelegate.swift */,
 				4CAB68C02474C15C0094C0F6 /* Assets.xcassets */,
@@ -205,6 +210,7 @@
 				4CAB68E92474C3D60094C0F6 /* Movement.swift in Sources */,
 				4C5E34BE247E06F30088638B /* Object.swift in Sources */,
 				4CE467B42484A6EC000E4436 /* RayTracing.metal in Sources */,
+				4C80BBEA2488ACE300912781 /* Renderer+RayTracing.swift in Sources */,
 				4CAB68DB2474C1E60094C0F6 /* Rasterizer.metal in Sources */,
 				4CAB68DA2474C1E60094C0F6 /* RenderView.swift in Sources */,
 				4CAB68EA2474C3D60094C0F6 /* UtilityFunctions.swift in Sources */,
@@ -322,6 +328,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -346,6 +353,7 @@
 				CODE_SIGN_ENTITLEMENTS = PBR/PBR.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = C9W4LWH48Z;
 				INFOPLIST_FILE = PBR/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -365,6 +373,7 @@
 				CODE_SIGN_ENTITLEMENTS = PBR/PBR.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = C9W4LWH48Z;
 				INFOPLIST_FILE = PBR/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

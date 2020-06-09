@@ -31,6 +31,8 @@ typedef struct __attribute__ ((packed)) packed_float3 {
 #define MATERIAL_ROUGHNESS 2
 #define MATERIAL_NORMAL 3
 
+#define DEFAULT_BLOCK_LINEAR_WIDTH 8 
+
 struct Vertex
 {
     //vertex needs to stay as the first value of the struct since vertex structs are
@@ -95,16 +97,24 @@ struct Intersection {
     simd_float2 coordinates;
 };
 
-struct ShadeRaysUniforms
+struct RayTracingUniforms
 {
-    int width;
-    int height;
+    int blockWidth;
+    int blockHeight;
     simd_float3 cameraPosition;
     simd_float3 cameraForward;
     simd_float3 cameraRight;
     simd_float3 cameraUp;
     float imagePlaneWidth;
     float imagePlaneHeight;
+    simd_uint2 offset;
+    int screenWidth;
+    int screenHeight;
+};
+
+struct PathIntersectionData {
+    struct Intersection intersection;
+    float pdf;
 };
 
 

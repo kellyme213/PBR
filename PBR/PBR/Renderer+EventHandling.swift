@@ -16,7 +16,6 @@ extension Renderer
 {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         movementController.updateScreenSize(newSize: size)
-        updateRayBufferSize(width: Int(size.width), height: Int(size.height))
     }
     
     func keyDown(with theEvent: NSEvent) {

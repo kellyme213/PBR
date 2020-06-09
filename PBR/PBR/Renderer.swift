@@ -28,11 +28,19 @@ class Renderer: NSObject, MTKViewDelegate {
     
     var cameraRayBuffer: MTLBuffer!
     var cameraIntersectionBuffer: MTLBuffer!
-    var shadeRaysUniformBuffer: MTLBuffer!
+    var rayTracingUniformBuffer: MTLBuffer!
     var renderMode = RENDER_MODE_RASTERIZE
     var generateCameraRaysPipelineState: MTLComputePipelineState!
     var shadeRaysPipelineState: MTLComputePipelineState!
-    var commandBuffer: MTLCommandBuffer!
+    var accumulateIntersectionsPipelineState: MTLComputePipelineState!
+
+    var randomTexture: MTLTexture!
+    
+    let partialRayDepth = 2
+    var cameraRayIntersectionBuffer: MTLBuffer!
+    var lightRayIntersectionBuffer: MTLBuffer!
+    
+    //var commandBuffer: MTLCommandBuffer!
 
     init?(renderView: RenderView) {
         super.init()
@@ -52,6 +60,7 @@ class Renderer: NSObject, MTKViewDelegate {
         commandQueue = device.makeCommandQueue()!
         movementController = Movement(initialScreenSize: renderView.frame.size)
         initializePipelineStates()
+        initializeBuffers()
     }
     
     func initializePipelineStates()
@@ -64,6 +73,45 @@ class Renderer: NSObject, MTKViewDelegate {
         
         shadeRaysPipelineState = makeComputePipelineState(device: device,
                                                           function: "shadeRays")
+        
+        accumulateIntersectionsPipelineState = makeComputePipelineState(device: device,
+                                                                        function: "accumulateIntersections")
+        
+        
+    }
+    
+    func initializeBuffers()
+    {
+        let rayStride = MemoryLayout<Ray>.stride
+        cameraRayBuffer = nil
+        fillBuffer(device: device,
+                   buffer: &cameraRayBuffer,
+                   data: [],
+                   size: rayStride * 64 * 64)
+        
+        let intersectionStride = MemoryLayout<Intersection>.stride
+        cameraIntersectionBuffer = nil
+        fillBuffer(device: device,
+                   buffer: &cameraIntersectionBuffer,
+                   data: [],
+                   size: intersectionStride * 64 * 64)
+        
+        randomTexture = createRandomTexture(device: device, width: 256, height: 256)
+        
+        let pathIntersectionStride = MemoryLayout<PathIntersectionData>.stride
+        cameraRayIntersectionBuffer = nil
+        fillBuffer(device: device,
+                   buffer: &cameraRayIntersectionBuffer,
+                   data: [],
+                   size: pathIntersectionStride * partialRayDepth * 64 * 64)
+        
+        lightRayIntersectionBuffer = nil
+        fillBuffer(device: device,
+                   buffer: &lightRayIntersectionBuffer,
+                   data: [],
+                   size: pathIntersectionStride * partialRayDepth * 64 * 64)
+        //print(pathIntersectionStride * partialRayDepth * 64 * 64 / 1024)
+        
     }
     
     func draw(in view: MTKView) {
@@ -84,54 +132,13 @@ class Renderer: NSObject, MTKViewDelegate {
         fragmentUniforms.numAreaLights = Int32(scene.sceneAreaLights.count)
         fragmentUniforms.numAreaLightSamples = 9;
         fillBuffer(device: device, buffer: &fragmentUniformBuffer, data: [fragmentUniforms])
-        
-        
-        let width = Int(renderView.currentDrawable!.texture.width)
-        let height = Int(renderView.currentDrawable!.texture.height)
-        let fovRadians = (Float(movementController.fieldOfView) * Float.pi) / 180.0
-        let aspectRatio = Float(width) / Float(height)
-        let imagePlaneHeight = tanf(fovRadians / 2.0)
-        let imagePlaneWidth = aspectRatio * imagePlaneHeight
-        
-        //generate camera basis vectors
-        let forward = normalize(movementController.cameraDirection)
-        let right = normalize(cross(forward, simd_float3(0.001, 1.0, 0.003)))
-        let up = normalize(cross(forward, right))
-        
-        var shadeUniforms = ShadeRaysUniforms()
-        shadeUniforms.cameraForward = forward
-        shadeUniforms.cameraRight = right
-        shadeUniforms.cameraUp = up
-        shadeUniforms.cameraPosition = movementController.cameraPosition
-        shadeUniforms.width = Int32(width)
-        shadeUniforms.height = Int32(height)
-        shadeUniforms.imagePlaneWidth = imagePlaneWidth
-        shadeUniforms.imagePlaneHeight = imagePlaneHeight
-        fillBuffer(device: device, buffer: &shadeRaysUniformBuffer, data: [shadeUniforms])
-
     }
     
-    func updateRayBufferSize(width: Int, height: Int)
-    {
-        print(width, height)
-        let rayStride = MemoryLayout<Ray>.stride
-        cameraRayBuffer = nil
-        fillBuffer(device: device,
-                   buffer: &cameraRayBuffer,
-                   data: [],
-                   size: rayStride * width * height)
-        
-        let intersectionStride = MemoryLayout<Intersection>.stride
-        cameraIntersectionBuffer = nil
-        fillBuffer(device: device,
-                   buffer: &cameraIntersectionBuffer,
-                   data: [],
-                   size: intersectionStride * width * height)
-    }
+
     
     func renderLoop()
     {
-        commandBuffer = commandQueue.makeCommandBuffer()!
+        
         if (renderMode == RENDER_MODE_RASTERIZE)
         {
             rasterizeRenderLoop()
@@ -141,56 +148,10 @@ class Renderer: NSObject, MTKViewDelegate {
             rayTraceRenderLoop()
         }
     }
-
     
-    func rayTraceRenderLoop()
-    {
-        var commandEncoder = commandBuffer.makeComputeCommandEncoder()!
-
-        let width = Int(renderView.currentDrawable!.texture.width)
-        let height = Int(renderView.currentDrawable!.texture.height)
-
-
-        
-        let size = MTLSize(width: 8, height: 8, depth: 1)
-        let threadgroups = MTLSize(width: (width + 7) / 8, height: (height + 7) / 8, depth: 1)
-        
-        
-        commandEncoder.setComputePipelineState(generateCameraRaysPipelineState)
-
-        commandEncoder.setBuffer(cameraRayBuffer, offset: 0, index: 0)
-        commandEncoder.setBuffer(shadeRaysUniformBuffer, offset: 0, index: 1)
-
-
-        commandEncoder.dispatchThreadgroups(threadgroups, threadsPerThreadgroup: size)
-        commandEncoder.endEncoding()
-
-        scene.sceneIntersector.encodeIntersection(commandBuffer: commandBuffer,
-                                                  intersectionType: .nearest,
-                                                  rayBuffer: cameraRayBuffer,
-                                                  rayBufferOffset: 0,
-                                                  intersectionBuffer: cameraIntersectionBuffer,
-                                                  intersectionBufferOffset: 0,
-                                                  rayCount: width * height,
-                                                  accelerationStructure: scene.sceneAccelerationStructure)
-
-        commandEncoder = commandBuffer.makeComputeCommandEncoder()!
-        commandEncoder.setComputePipelineState(shadeRaysPipelineState)
-        commandEncoder.setBuffer(cameraRayBuffer, offset: 0, index: 0)
-        commandEncoder.setBuffer(cameraIntersectionBuffer, offset: 0, index: 1)
-        commandEncoder.setBuffer(scene.sceneVertexBuffer, offset: 0, index: 2)
-        commandEncoder.setBuffer(shadeRaysUniformBuffer, offset: 0, index: 3)
-        commandEncoder.setTexture(scene.sceneBaseColorTextures, index: 0)
-        commandEncoder.setTexture(renderView.currentDrawable!.texture, index: 4)
-        
-        commandEncoder.dispatchThreadgroups(threadgroups, threadsPerThreadgroup: size)
-        commandEncoder.endEncoding()
-                
-        commandBuffer.present(renderView.currentDrawable!)
-        commandBuffer.commit()
-        
-
-    }
+    
+    
+   
     
     func rasterizeRenderLoop()
     {

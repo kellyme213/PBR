@@ -120,7 +120,20 @@ func createBuffer<T>(device: MTLDevice, data: [T], size: Int = 0) -> MTLBuffer!
     return device.makeBuffer(bytes: data, length: bufferSize, options: .storageModeShared)!
 }
 
+func fillRandomTexture(texture: MTLTexture)
+{
+    let width = texture.width
+    let height = texture.height
+    
+    var randomValues: [SIMD4<Float>] = []
 
+    for _ in 0 ..< width * height
+    {
+        randomValues.append(SIMD4<Float>(Float(drand48()), Float(drand48()), Float(drand48()), Float(drand48())))
+    }
+    
+    texture.replace(region: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0, withBytes: &randomValues, bytesPerRow: MemoryLayout<SIMD4<Float>>.stride * width)
+}
 
 
 func createRandomTexture(device: MTLDevice, width: Int, height: Int, usage: MTLTextureUsage = .shaderRead) -> MTLTexture
@@ -132,20 +145,11 @@ func createRandomTexture(device: MTLDevice, width: Int, height: Int, usage: MTLT
     textureDescriptor.usage = usage
     textureDescriptor.storageMode = .managed
     
-    var randomValues: [SIMD4<Float>] = []
-    
-    for _ in 0 ..< width * height
-    {
-        randomValues.append(SIMD4<Float>(Float(drand48()), Float(drand48()), Float(drand48()), Float(drand48())))
-    }
-    
     let texture = device.makeTexture(descriptor: textureDescriptor)!
-    
-    texture.replace(region: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0, withBytes: &randomValues, bytesPerRow: MemoryLayout<SIMD4<Float>>.stride * width)
+
+    fillRandomTexture(texture: texture)
     
     return texture
-    
-    
 }
 
 //create a render pass descriptor with a depth attachment
