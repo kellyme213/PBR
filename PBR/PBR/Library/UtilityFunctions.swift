@@ -84,11 +84,15 @@ extension SIMD4
 //if size is not specified, then the buffer will only be able to contain the data contained
 //in the data array. If size is specified, the buffer will be allocated to that size, which
 //can be larger than the size of the data array.
-func fillBuffer<T>(device: MTLDevice, buffer: inout MTLBuffer?, data: [T], size: Int = 0)
+func fillBuffer<T>(device: MTLDevice,
+                   buffer: inout MTLBuffer?,
+                   data: [T],
+                   size: Int = 0,
+                   options: MTLResourceOptions = .storageModeShared)
 {
     if (buffer == nil)
     {
-        buffer = createBuffer(device: device, data: data, size: size)
+        buffer = createBuffer(device: device, data: data, size: size, options: options)
     }
     else
     {
@@ -103,7 +107,10 @@ func fillBuffer<T>(device: MTLDevice, buffer: inout MTLBuffer?, data: [T], size:
     }
 }
 
-func createBuffer<T>(device: MTLDevice, data: [T], size: Int = 0) -> MTLBuffer!
+func createBuffer<T>(device: MTLDevice,
+                     data: [T],
+                     size: Int = 0,
+                     options: MTLResourceOptions = .storageModeShared) -> MTLBuffer!
 {
     var bufferSize: Int = size
     
@@ -114,10 +121,10 @@ func createBuffer<T>(device: MTLDevice, data: [T], size: Int = 0) -> MTLBuffer!
     
     if (data.count == 0)
     {
-        return device.makeBuffer(length: bufferSize, options: .storageModeShared)
+        return device.makeBuffer(length: bufferSize, options: options)
     }
     
-    return device.makeBuffer(bytes: data, length: bufferSize, options: .storageModeShared)!
+    return device.makeBuffer(bytes: data, length: bufferSize, options: options)!
 }
 
 func fillRandomTexture(texture: MTLTexture)
