@@ -42,19 +42,19 @@ class Scene
         sceneObjects.append(readObj(file: file, material: material, scaleFactor: scaleFactor, worldPosition: worldPosition))
     }
     
-    func addPointLight(position: simd_float3, irradiance: simd_float3, lightRadius: Float)
+    func addPointLight(position: simd_float3, radiance: simd_float3, lightRadius: Float)
     {
         let l = PointLight(position: position,
-                           irradiance: irradiance,
+                           radiance: radiance,
                            lightRadius: lightRadius)
         scenePointLights.append(l)
     }
     
-    func addAreaLight(position: simd_float3, direction: simd_float3, irradiance: simd_float3, lightRadius: Float, extent: simd_float2)
+    func addAreaLight(position: simd_float3, direction: simd_float3, radiance: simd_float3, lightRadius: Float, extent: simd_float2)
     {
         let l = AreaLight(position: position,
                           direction: direction,
-                          irradiance: irradiance,
+                          radiance: radiance,
                           lightRadius: lightRadius,
                           extent: extent)
         sceneAreaLights.append(l)

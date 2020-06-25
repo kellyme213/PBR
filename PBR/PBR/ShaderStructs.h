@@ -48,14 +48,14 @@ struct Vertex
 struct PointLight
 {
     simd_float3 position;
-    simd_float3 irradiance;
+    simd_float3 radiance;
     float lightRadius;
 };
 
 struct DirectionalLight
 {
     simd_float3 direction;
-    simd_float3 irradiance;
+    simd_float3 radiance;
     float lightRadius;
 };
 
@@ -63,7 +63,7 @@ struct AreaLight
 {
     simd_float3 position;
     simd_float3 direction;
-    simd_float3 irradiance;
+    simd_float3 radiance;
     float lightRadius;
     simd_float2 extent;
 };

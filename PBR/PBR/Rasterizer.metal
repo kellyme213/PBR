@@ -42,7 +42,7 @@ vertex VertexOut vertexShader
 
 float3 sampleLight(float3 n, float3 baseColor, float roughness, float metalness,
                    float3 lightPosition, float3 worldPosition, float3 cameraPosition,
-                   float lightRadius, float3 irradiance, float kConstant)
+                   float lightRadius, float3 radiance, float kConstant)
 {
     float3 dirToLight = lightPosition - worldPosition;
     float distToLight = length(dirToLight);
@@ -53,7 +53,7 @@ float3 sampleLight(float3 n, float3 baseColor, float roughness, float metalness,
     float falloff = calculateFalloff(lightRadius, distToLight);
 
     //incoming radiance along wi
-    float3 Li = kConstant * irradiance * falloff;
+    float3 Li = kConstant * radiance * falloff;
     //might want to divide by light area
     
     //direction towards the camera/out of the surface
@@ -124,7 +124,7 @@ fragment float4 fragmentShader
                                              in.worldSpacePosition,
                                              uniforms.worldSpaceCameraPosition,
                                              light.lightRadius,
-                                             light.irradiance, 1.0);
+                                             light.radiance, 1.0);
         
         //integrating the rendering equation
         Lo += partialRadiance;
@@ -170,7 +170,7 @@ fragment float4 fragmentShader
                                                  in.worldSpacePosition,
                                                  uniforms.worldSpaceCameraPosition,
                                                  light.lightRadius,
-                                                 light.irradiance, k);
+                                                 light.radiance, k);
             
             //integrating the rendering equation
             Lo += partialRadiance;
